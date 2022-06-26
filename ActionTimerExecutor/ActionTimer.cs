@@ -13,6 +13,10 @@ namespace ActionTimerExecutor
         private ConcurrentDictionary<string, ActionItem> _actionItems = new();
         private ConcurrentDictionary<string, ActionItem> _actionItemsConcurrent = new();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        /// <summary>
+        /// Constructor Requires a Microsoft Ilogger
+        /// </summary>
+        /// <param name="logger">Ilogger element</param>
         public ActionTimer(ILogger<ActionTimer> logger)
         {
             _logger = logger;
