@@ -45,7 +45,7 @@ namespace ActionTimerExecutor
         /// Adds an action to the correct list based on if we need to execute in order or not.
         /// </summary>
         /// <param name="action">A unique Identifier for the Action to Execute</param>
-        /// <param name="actionToExecute">Func<Task> A Fuction that only returns Task.</param>
+        /// <param name="actionToExecute">A Fuction that only returns Task.</param>
         /// <param name="intervalMilliseconds">Time in Milliseconds to wait before the action is Executed</param>
         /// <param name="noWait">Should the function be executed in order or parallel</param>
         /// <returns>True if the Action was added successfully, False if it was not</returns>
