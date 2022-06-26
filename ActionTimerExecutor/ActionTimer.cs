@@ -113,7 +113,9 @@ namespace ActionTimerExecutor
                 await RunAction(actionItem, now);
             }
         }
-
+        /// <summary>
+        /// Dispose all used elements
+        /// </summary>
         public void Dispose()
         {
             _periodicTimer?.Dispose();
