@@ -1,5 +1,11 @@
-﻿namespace ActionTimerExecutor
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+
+namespace ActionTimerExecutor
 {
+    /// <summary>
+    /// Depends on Microsoft.Extensons.Logging
+    /// </summary>
     public class ActionTimer : IDisposable, IActionTimer
     {
         private readonly ILogger<ActionTimer> _logger;
