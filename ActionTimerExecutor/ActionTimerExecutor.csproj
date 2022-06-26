@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<PackageId>ActionTimer</PackageId>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<Authors>Edgar Aquino</Authors>
 		<Company>edgaraquino.dev</Company>
 		<TargetFramework>net6.0</TargetFramework>
@@ -10,16 +10,16 @@
 		<Nullable>enable</Nullable>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<EnablePackageValidation>true</EnablePackageValidation>
-		<RollForward>LatestMinor</RollForward>
+		<RollForward>latestFeature</RollForward>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Description>Creates a PeriodicTimer that can execute Func&lt;Task&gt; Items in descending order of interval requested or concurrent. </Description>
 		<PackageProjectUrl>https://github.com/eeaquino/ActionTimerExecutor</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<AssemblyVersion>1.0.1</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Include="https:\github.com\eeaquino\ActionTimerExecutor\blob\main\README.md" />
 	</ItemGroup>
 	
 	<ItemGroup>
