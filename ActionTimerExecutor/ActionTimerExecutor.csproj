@@ -15,6 +15,7 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Description>Creates a PeriodicTimer that can execute Func&lt;Task&gt; Items in descending order of interval requested or concurrent. </Description>
 		<PackageProjectUrl>https://github.com/eeaquino/ActionTimerExecutor</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
