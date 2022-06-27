@@ -4,7 +4,11 @@ Ths package uses a PeriodicTimer to execure functions of the type Func<Task> at 
 The functions can be executed in descending order based on the Interval Requested(nowait = false) or can be concurrently executed(noWait = true).
   
   # Usage
-  Inject your timer, register your actions and start the timer. 
+  Inject your timer(as Transient), register your actions and start the timer. 
+  
+  ```
+  builder.Services.AddTransient<IActionTimer, ActionTimer>();
+  ```
   
   Sample Blazor Component
   
