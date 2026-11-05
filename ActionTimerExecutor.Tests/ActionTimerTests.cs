@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace ActionTimerExecutor.Tests;
@@ -426,6 +426,119 @@ public class ActionTimerTests : IDisposable
         var errors = _actionTimer.GetErrors(actionName, noWait: false);
         // Should have cleared and started fresh, so less than or equal to 100
         Assert.True(errors.Count <= 100);
+    }
+
+    [Fact]
+    public async Task Start_ExecutesOrderedActions_InDescendingIntervalOrder()
+    {
+        // Arrange: a 300ms first tick means every action is due on the same tick,
+        // so the order they run in is observable.
+        var executionOrder = new List<int>();
+        var gate = new object();
+
+        void Record(int interval) => AddOrderedAction(interval, () =>
+        {
+            lock (gate) { executionOrder.Add(interval); }
+        });
+
+        Record(100);
+        Record(200);
+        Record(300);
+
+        // Act
+        var cts = new CancellationTokenSource();
+        _actionTimer.Start(milliseconds: 300, ct: cts.Token);
+        await Task.Delay(800);
+        cts.Cancel();
+
+        // Assert
+        int[] firstThree;
+        lock (gate) { firstThree = executionOrder.Take(3).ToArray(); }
+
+        Assert.Equal(new[] { 300, 200, 100 }, firstThree);
+
+        void AddOrderedAction(int interval, Action body)
+        {
+            _actionTimer.AddAction($"Action{interval}", () => { body(); return Task.CompletedTask; }, interval, noWait: false);
+        }
+    }
+
+    [Fact]
+    public async Task Start_DoesNotWaitForConcurrentActions_BeforeOrderedActions()
+    {
+        // Arrange
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var concurrentStarted = false;
+        var concurrentFinished = false;
+        var orderedExecuted = false;
+
+        _actionTimer.AddAction("Slow", async () =>
+        {
+            concurrentStarted = true;
+            await gate.Task;
+            concurrentFinished = true;
+        }, 10, noWait: true);
+
+        _actionTimer.AddAction("Ordered", () =>
+        {
+            orderedExecuted = true;
+            return Task.CompletedTask;
+        }, 10, noWait: false);
+
+        // Act
+        var cts = new CancellationTokenSource();
+        _actionTimer.Start(milliseconds: 50, ct: cts.Token);
+        await Task.Delay(300);
+
+        // Assert: the tick did not block on the pending concurrent action.
+        Assert.True(concurrentStarted);
+        Assert.True(orderedExecuted);
+        Assert.False(concurrentFinished);
+
+        gate.SetResult();
+        cts.Cancel();
+    }
+
+    [Fact]
+    public async Task Start_ExecutesOrderedAction_AddedAfterStart()
+    {
+        // Arrange
+        var executed = 0;
+        var cts = new CancellationTokenSource();
+
+        // Act
+        _actionTimer.Start(milliseconds: 25, ct: cts.Token);
+        await Task.Delay(100);
+
+        _actionTimer.AddAction("Late", () => { Interlocked.Increment(ref executed); return Task.CompletedTask; }, 10, noWait: false);
+        await Task.Delay(300);
+        cts.Cancel();
+
+        // Assert
+        Assert.True(Interlocked.CompareExchange(ref executed, 0, 0) > 0);
+    }
+
+    [Fact]
+    public async Task Start_StopsExecutingOrderedAction_AfterRemoveAction()
+    {
+        // Arrange
+        var executed = 0;
+        var cts = new CancellationTokenSource();
+        _actionTimer.AddAction("Removable", () => { Interlocked.Increment(ref executed); return Task.CompletedTask; }, 10, noWait: false);
+
+        // Act
+        _actionTimer.Start(milliseconds: 25, ct: cts.Token);
+        await Task.Delay(300);
+
+        _actionTimer.RemoveAction("Removable", noWait: false);
+        var countAtRemoval = Interlocked.CompareExchange(ref executed, 0, 0);
+        await Task.Delay(300);
+        var countAfter = Interlocked.CompareExchange(ref executed, 0, 0);
+        cts.Cancel();
+
+        // Assert: may gain at most the one execution already in flight on the removal tick.
+        Assert.True(countAtRemoval > 0);
+        Assert.True(countAfter <= countAtRemoval + 1);
     }
 
     public void Dispose()

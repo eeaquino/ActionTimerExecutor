@@ -1,22 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ActionTimerExecutor
 {
-    internal class ActionItem
+    internal sealed class ActionItem
     {
-        public int IntervalMilliseconds { get; set; }
-        public Func<Task> Action { get; set; }
-        public DateTime LastExecuted { get; set; } = DateTime.Now;
-        public List<string> Exceptions = new();
-
         public ActionItem(Func<Task> actionToExecute, int intervalMilliseconds)
         {
             Action = actionToExecute;
             IntervalMilliseconds = intervalMilliseconds;
+            LastExecutedTimestamp = Stopwatch.GetTimestamp();
         }
+
+        public int IntervalMilliseconds { get; }
+
+        public Func<Task> Action { get; }
+
+        /// <summary>
+        /// Monotonic timestamp (<see cref="Stopwatch"/> ticks) of the last execution.
+        /// A monotonic clock cannot jump backwards, so a system clock adjustment can no
+        /// longer make the elapsed delta negative and stall the action.
+        /// </summary>
+        public long LastExecutedTimestamp { get; set; }
+
+        public List<string> Exceptions { get; } = [];
+
+        public bool IsDue(long nowTimestamp) =>
+            Stopwatch.GetElapsedTime(LastExecutedTimestamp, nowTimestamp).TotalMilliseconds
+                >= IntervalMilliseconds;
     }
 }
