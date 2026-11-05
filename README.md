@@ -1,11 +1,15 @@
 # ActionTimerExecutor
 
-Ths package uses a PeriodicTimer to execure functions of the type Func<Task> at specified intervals. 
-The functions can be executed in descending order based on the Interval Requested(nowait = false) or can be concurrently executed(noWait = true).
+This package uses a PeriodicTimer to execute functions of the type Func<Task> at specified intervals. 
+The functions can be executed in descending order based on the Interval Requested (noWait = false) or can be executed concurrently (noWait = true).
+
+# Requirements
+
+Targets .NET 10 (`net10.0`). The .NET 10 SDK is pinned in `global.json`.
   
   # Usage
   Inject your timer, register your actions and start the timer. 
-  Make sure you select the correct lifetime (Scoped, Transient, Singleton) for your usecase. 
+  Make sure you select the correct lifetime (Scoped, Transient, Singleton) for your use case. 
   
   ```
   builder.Services.AddTransient<IActionTimer, ActionTimer>();
