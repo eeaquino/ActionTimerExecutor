@@ -5,7 +5,7 @@ The functions can be executed in descending order based on the Interval Requeste
 
 # Requirements
 
-Targets .NET 10 (`net10.0`). The .NET 10 SDK is pinned in `global.json`.
+Targets .NET 10 (`net10.0`) and .NET 11 (`net11.0`). The .NET 11 SDK is pinned in `global.json`; the `net11.0` build enables the runtime async engine (`runtime-async=on`).
   
   # Usage
   Inject your timer, register your actions and start the timer. 

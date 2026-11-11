@@ -2,10 +2,10 @@
 
 	<PropertyGroup>
 		<PackageId>ActionTimer</PackageId>
-		<Version>1.1.0</Version>
+		<Version>1.2.0</Version>
 		<Authors>Edgar Aquino</Authors>
 		<Company>edgaraquino.dev</Company>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -16,8 +16,13 @@
 		<Description>Creates a PeriodicTimer that can execute Func&lt;Task&gt; Items in descending order of interval requested or concurrent. </Description>
 		<PackageProjectUrl>https://github.com/eeaquino/ActionTimerExecutor</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<AssemblyVersion>1.1.0</AssemblyVersion>
+		<AssemblyVersion>1.2.0</AssemblyVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<!-- .NET 11 only: opt into the runtime async engine (no compiler-generated state machine). -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+		<Features>runtime-async=on</Features>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,8 +32,12 @@
 		<None Include="..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.14" />
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.15" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
 	</ItemGroup>
 
 </Project>
