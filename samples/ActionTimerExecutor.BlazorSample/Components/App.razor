@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ActionTimerExecutor — live sample</title>
+    <base href="/" />
+    <HeadOutlet />
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            margin: 0 auto;
+            max-width: 960px;
+            padding: 1.5rem;
+            line-height: 1.45;
+        }
+        h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+        h2 { font-size: 1.15rem; margin-top: 1.75rem; }
+        .muted { opacity: .7; }
+        table { border-collapse: collapse; width: 100%; margin-top: .5rem; }
+        th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #8884; }
+        th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+        td.num { font-variant-numeric: tabular-nums; }
+        button {
+            font: inherit; padding: .25rem .6rem; border-radius: .35rem;
+            border: 1px solid #8888; background: transparent; cursor: pointer;
+        }
+        button:disabled { opacity: .45; cursor: default; }
+        .pill { border-radius: 999px; padding: .05rem .5rem; font-size: .78rem; border: 1px solid #8888; }
+        .ok { color: #15803d; }
+        .bad { color: #b91c1c; }
+        .panel { border: 1px solid #8884; border-radius: .5rem; padding: .75rem 1rem; margin-top: .75rem; }
+        ul.errors { margin: .5rem 0 0; padding-left: 1.25rem; }
+        .banner { background: #3b82f620; border: 1px solid #3b82f680; border-radius: .5rem; padding: .5rem .75rem; margin-top: 1rem; }
+        code { font-size: .9em; }
+    </style>
+</head>
+
+<body>
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>

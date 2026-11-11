@@ -1,0 +1,267 @@
+@page "/"
+@implements IAsyncDisposable
+@inject IActionTimer Timer
+
+<PageTitle>ActionTimerExecutor — live sample</PageTitle>
+
+<h1>ActionTimerExecutor</h1>
+<p class="muted">
+    A <code>PeriodicTimer</code>-backed scheduler that runs <code>Func&lt;Task&gt;</code> actions on their own
+    intervals — in descending interval order, or concurrently. Everything below is driven by the real library
+    through <code>IActionTimer</code>.
+</p>
+
+<div class="banner">
+    Scheduler tick <strong>@SchedulerTickMs ms</strong> ·
+    started <strong>@_startedAt.ToString("HH:mm:ss")</strong> ·
+    <span class="@(_disposed ? "bad" : "ok")">@(_disposed ? "disposed" : "running")</span>
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <text> · @_message</text>
+    }
+</div>
+
+<h2>Ordered actions <span class="pill">noWait: false</span></h2>
+<p class="muted">
+    Registered with three different intervals. The library runs them in descending interval order on every tick,
+    and each one only fires once its own interval has elapsed.
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Interval</th>
+            <th>Executions</th>
+            <th>Last run</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var action in _ordered)
+        {
+            <tr>
+                <td>@action.Name <span class="muted">— @action.Note</span></td>
+                <td class="num">@action.IntervalMs ms</td>
+                <td class="num">@Volatile.Read(ref action.Executions)</td>
+                <td class="num">@Format(action.LastRun)</td>
+                <td>
+                    @if (action.Removed)
+                    {
+                        <span class="bad">removed</span>
+                    }
+                    else
+                    {
+                        <button @onclick="() => Remove(action)" disabled="@_disposed">Remove</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Concurrent actions <span class="pill">noWait: true</span></h2>
+<p class="muted">
+    <strong>Concurrent-Slow</strong> awaits 900 ms inside the action while its interval is 400 ms, so runs overlap.
+    The tick never waits for them, so the other actions keep their cadence.
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Interval</th>
+            <th>Executions</th>
+            <th>Last run</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var action in _concurrent)
+        {
+            <tr>
+                <td>@action.Name <span class="muted">— @action.Note</span></td>
+                <td class="num">@action.IntervalMs ms</td>
+                <td class="num">@Volatile.Read(ref action.Executions)</td>
+                <td class="num">@Format(action.LastRun)</td>
+                <td>
+                    @if (action.Removed)
+                    {
+                        <span class="bad">removed</span>
+                    }
+                    else
+                    {
+                        <button @onclick="() => Remove(action)" disabled="@_disposed">Remove</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p class="muted">
+    Currently running inside <strong>Concurrent-Slow</strong>: <strong>@_inFlightSlow</strong> ·
+    highest overlap observed: <strong>@_maxInFlightSlow</strong>
+</p>
+
+<h2>Failing action and <code>GetErrors</code></h2>
+<p class="muted">
+    <strong>@_failing.Name</strong> throws on every execution. The library catches it, logs it and records the
+    message; <code>GetErrors</code> returns that list (capped at 100 entries).
+</p>
+<button @onclick="RefreshErrors" disabled="@_disposed">Refresh errors</button>
+@if (_errors.Count == 0)
+{
+    <p class="muted">Nothing captured yet — let it run a couple of seconds, then refresh.</p>
+}
+else
+{
+    <div class="panel">
+        <strong>@_errors.Count error(s) reported</strong>
+        <ul class="errors">
+            @foreach (var error in _errors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
+<h2>Lifecycle</h2>
+<p class="muted">
+    <code>RemoveAction</code> unregisters a single action while the others keep running. <code>Dispose</code> stops
+    the timer entirely; navigating away from this page also disposes it through <code>IAsyncDisposable</code>.
+</p>
+<button @onclick="Stop" disabled="@_disposed">Remove all actions and Dispose the timer</button>
+
+@code {
+    private sealed class DemoAction
+    {
+        public required string Name { get; init; }
+        public required int IntervalMs { get; init; }
+        public required bool NoWait { get; init; }
+        public string Note { get; init; } = "";
+        public int Executions;
+        public DateTime LastRun;
+        public bool Removed;
+    }
+
+    private const int SchedulerTickMs = 100;
+    private const int SlowConcurrentDelayMs = 900;
+
+    private readonly List<DemoAction> _ordered =
+    [
+        new() { Name = "Ordered-2s", IntervalMs = 2000, NoWait = false, Note = "slowest, runs first" },
+        new() { Name = "Ordered-1s", IntervalMs = 1000, NoWait = false, Note = "middle" },
+        new() { Name = "Ordered-500ms", IntervalMs = 500, NoWait = false, Note = "fastest, runs last" },
+    ];
+
+    private readonly List<DemoAction> _concurrent =
+    [
+        new() { Name = "Concurrent-Quick", IntervalMs = 400, NoWait = true, Note = "returns immediately" },
+        new() { Name = "Concurrent-Slow", IntervalMs = 400, NoWait = true, Note = $"awaits {SlowConcurrentDelayMs} ms inside" },
+    ];
+
+    private readonly DemoAction _failing = new() { Name = "Failing-Action", IntervalMs = 1500, NoWait = false };
+
+    private readonly DateTime _startedAt = DateTime.Now;
+
+    private int _inFlightSlow;
+    private int _maxInFlightSlow;
+    private int _disposedFlag;
+    private string? _message;
+    private IReadOnlyList<string> _errors = [];
+
+    private bool _disposed => Volatile.Read(ref _disposedFlag) == 1;
+
+    protected override Task OnInitializedAsync()
+    {
+        foreach (var action in _ordered)
+            Timer.AddAction(action.Name, () => Run(action), action.IntervalMs, noWait: false);
+
+        foreach (var action in _concurrent)
+            Timer.AddAction(action.Name, () => RunConcurrent(action), action.IntervalMs, noWait: true);
+
+        Timer.AddAction(_failing.Name, RunFailing, _failing.IntervalMs, noWait: false);
+
+        Timer.Start(SchedulerTickMs);
+        _message = "timer started";
+        return Task.CompletedTask;
+    }
+
+    private async Task Run(DemoAction action)
+    {
+        Interlocked.Increment(ref action.Executions);
+        action.LastRun = DateTime.Now;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RunConcurrent(DemoAction action)
+    {
+        Interlocked.Increment(ref action.Executions);
+        action.LastRun = DateTime.Now;
+
+        if (action.Name != "Concurrent-Slow")
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var inFlight = Interlocked.Increment(ref _inFlightSlow);
+        if (inFlight > Volatile.Read(ref _maxInFlightSlow))
+            Interlocked.Exchange(ref _maxInFlightSlow, inFlight);
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(SlowConcurrentDelayMs, CancellationToken.None);
+        Interlocked.Decrement(ref _inFlightSlow);
+    }
+
+    private Task RunFailing() =>
+        throw new InvalidOperationException($"Simulated failure at {DateTime.Now:HH:mm:ss.fff}");
+
+    private void Remove(DemoAction action)
+    {
+        action.Removed = Timer.RemoveAction(action.Name, action.NoWait);
+        _message = action.Removed
+            ? $"removed {action.Name}"
+            : $"could not remove {action.Name}";
+    }
+
+    private void RefreshErrors()
+    {
+        try
+        {
+            // GetErrors hands back the live list, which the timer thread may still be appending to.
+            _errors = Timer.GetErrors(_failing.Name, noWait: false).ToArray();
+        }
+        catch (InvalidOperationException)
+        {
+            _errors = ["The error list was being written to while reading it — press refresh again."];
+        }
+
+        _message = $"errors refreshed ({_errors.Count})";
+    }
+
+    private void Stop()
+    {
+        foreach (var action in _ordered)
+            Timer.RemoveAction(action.Name, noWait: false);
+
+        foreach (var action in _concurrent)
+            Timer.RemoveAction(action.Name, noWait: true);
+
+        Timer.RemoveAction(_failing.Name, noWait: false);
+        Timer.Dispose();
+
+        Volatile.Write(ref _disposedFlag, 1);
+        _message = "timer disposed";
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        if (!_disposed)
+            Stop();
+
+        return ValueTask.CompletedTask;
+    }
+
+    private static string Format(DateTime value) =>
+        value == default ? "—" : value.ToString("HH:mm:ss.fff");
+}

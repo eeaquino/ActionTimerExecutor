@@ -6,6 +6,16 @@ The functions can be executed in descending order based on the Interval Requeste
 # Requirements
 
 Targets .NET 10 (`net10.0`) and .NET 11 (`net11.0`). The .NET 11 SDK is pinned in `global.json`; the `net11.0` build enables the runtime async engine (`runtime-async=on`).
+
+# Sample application
+
+`samples/ActionTimerExecutor.BlazorSample` is a Blazor (InteractiveServer) app that exercises the whole API — ordered and concurrent actions, `RemoveAction`, `GetErrors` and `Dispose`:
+
+```
+dotnet run --project samples/ActionTimerExecutor.BlazorSample
+```
+
+Then open http://localhost:5199.
   
   # Usage
   Inject your timer, register your actions and start the timer. 
